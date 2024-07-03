@@ -59,10 +59,9 @@ The flow actions testing mechanism allows a mock event to be edited and then the
 Unfortunately, the only way to managem multiple tests with any success is to manage different event configurations outside of the console,
 and then paste them in turn to perform tests.
 
-Because of the weak testing features, any significant action must have all possible paths checked.
-That is what unit tests are designed to do.
+Any significant action must have all possible paths of execution checked, with both positive and negative configurations.
 There is no reason that the event and api objects cannot be mocked, and actions tested, outside of Auth0.
-This project has a full suite of unit tests for the action, written in *Vitest*.
+As an example of how to do with for a action this project has a full suite of unit tests, written in *Vitest*, with a high percentage of code-coverage.
 Vitest performs much better than Jest at asynchromous testing, which is often the case with an action.
 
 At the command line in the project folder:
