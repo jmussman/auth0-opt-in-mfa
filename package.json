@@ -1,0 +1,14 @@
+{
+    "name": "auth0-opt-in-mfa",
+    "version": "1.0.0",
+    "devDependencies": {
+        "@vitest/coverage-v8": "^1.6.0",
+        "ejs-lint": "^2.0.0",
+        "vitest": "^1.6.0"
+    },
+    "scripts": {
+        "test": "vitest run --no-file-parallelism",
+        "test-coverage": "vitest run --no-file-parallelism --coverage"
+    },
+    "type": "module"
+}
