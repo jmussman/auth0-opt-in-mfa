@@ -1,0 +1,12 @@
+{
+    "name": "Auth0 Pyrates SPA",
+    "forwardPorts": [
+        3000
+    ],
+    "portsAttributes": {
+        "3000": {
+            "label": "pyrates"
+        }
+    },
+    "postAttachCommand": "gh codespace ports visibility 3000:public -c $CODESPACE_NAME"
+}

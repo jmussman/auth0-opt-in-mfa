@@ -28,17 +28,32 @@ exports.onExecutePostLogin = async (event, api) => {
 
     if (event.user.user_metadata.mfaOptIn) {
 
-        DEBUG ? console.log(`User ${event.user.user_id} has MFA opt-in enabled`) : null;
-
         // Fall back to the email if username is not set.
 
-        let username = event.user.username?.trim().length ? event.user.username : event.user.email;
+        let username = event.user.username?.trim().length ? event.user.username.trim() : event.user.email.trim();
+
+        DEBUG ? console.log(`User ${event.user.user_id} (${username}) has MFA opt-in enabled`) : null;
 
         // Split the MFA types allowed. Without MFA types, challenge or enrollment is moot.
 
-        let mfaTypes = event.secrets.mfaTypes?.split(',');
+        let mfaTypes = event.secrets.mfaTypes?.split(',').map(mfaType => mfaType.trim());
 
         if (mfaTypes?.length) {
+
+            const factorTypeFromFactor = (factor, options) => {
+
+                const factorType = { type: factor.trim() };
+
+                if (options) {
+        
+                    const [ optionName, optionValue ] = options.split('=').map(option => option.trim());
+        
+                    factorType.option = { };
+                    factorType.option[optionName] = optionValue;
+                }
+
+                return factorType
+            }
 
             // Verify each provider in the list, replace an invalid provider with null. Some providers have sub-data provided here in
             // the form provider/sub-data. The providers, data and sub-data, must be set up as an array of objects. Details of valid 
@@ -47,58 +62,40 @@ exports.onExecutePostLogin = async (event, api) => {
             mfaTypes = mfaTypes.map(mfaType => {
                 
                 let result = null
-                let mfaProvider = mfaType.split('/');
+                const [ provider, option ] = mfaType.split('/');
 
-                mfaProvider[0] = mfaProvider[0].trim();
-
-                switch (mfaProvider[0]) {
+                switch (provider) {
                     case 'opt':
                     case 'recovery-code':
                     case 'email':
                     case 'webauthn-platform':
                     case 'webauthn-roaming':
-                        result = { type: mfaProvider[0] };
+                        result = factorTypeFromFactor(provider);
                         break;
 
                     case 'push-notification':
-                        if (mfaProvider.length == 2) {
+                        result = factorTypeFromFactor(provider, option);
 
-                            mfaProvider[1] = mfaProvider[1].trim()
+                        if (result.option.optFallback !== 'true' && result.option.optFallback !== 'false' ) {
 
-                            if (mfaProvider[1].startsWith('optFallback=')) {
-
-                                const value = mfaProvider[1].substr('optFallback='.length)
-
-                                if (value === 'true' || value === 'false') {
-
-                                    result = { type: 'push-notification', options: { optFallback: value }}
-                                }
-                            }
+                            result = null;
                         }
                         break;
 
                     case 'phone':
-                        if (mfaProvider.length == 2) {
+                        result = factorTypeFromFactor(provider, option);
 
-                            mfaProvider[1] = mfaProvider[1].trim()
-                            
-                            if (mfaProvider[1].startsWith('preferredMethod=')) {
+                        if (result.option.preferredMethod !== 'sms' && result.option.preferredMethod !== 'voice' && result.option.preferredMethod !== 'both') {
 
-                                const value = mfaProvider[1].substr('preferredMethod='.length)
-
-                                if (value === 'voice' || value === 'sms' || value === 'both') {
-
-                                    result = { type: 'phone', options: { preferredMethod: value }}
-                                }
-                            }
+                            result = null;
                         }
                         break;
-
+    
                     default:
                         break;
                 }
                 
-                return result
+                return result;
             })
 
             // Drop the null entries (invalid provider data). If there are no providers, MFA is ignored.
@@ -107,30 +104,40 @@ exports.onExecutePostLogin = async (event, api) => {
 
             if (mfaTypes.length) {
 
-                if (event.user.multifactor?.length && event.user.multifactor[0] == 'guardian') {
+                try {
 
-                    // Contratry to the api object documentation:
-                    // https://auth0.com/docs/customize/actions/flows-and-triggers/login-flow/api-object,
-                    // if the user is enrolled "multifactor" is always a single array element with the
-                    // value "guardian", not a list of the providers. See
-                    // https://community.auth0.com/t/event-user-multifactor-property-not-showing-each-factor/115069.
-                    // We simply invoke MFA challenge with all of the providers listed in mfaTypes, regardless of what
-                    // the user has enrolled in. If a provider is listed but the user is not enrolled, it will not
-                    // be offered during a challenge (api object documentation).
+                    if (event.user.multifactor?.length && event.user.multifactor[0] == 'guardian') {
 
-                    DEBUG ? console.log(`Challenge user ${event.user.user_id} (${username}) authentication with ${JSON.stringify(mfaTypes)}`) : null;
+                        // Contratry to the api object documentation:
+                        // https://auth0.com/docs/customize/actions/flows-and-triggers/login-flow/api-object,
+                        // if the user is enrolled "multifactor" is always a single array element with the
+                        // value "guardian", not a list of the providers. See
+                        // https://community.auth0.com/t/event-user-multifactor-property-not-showing-each-factor/115069.
+                        // The list of factors can be pulled via the management API as the guardian profile property.
+                        //
+                        // We simply invoke MFA challenge with all of the providers listed in mfaTypes, regardless of what
+                        // the user has enrolled in. If a provider is listed but the user is not enrolled, it will not
+                        // be offered during a challenge (api object documentation).
 
-                    await api.authentication.challengeWithAny(mfaTypes);
+                        DEBUG ? console.log(`Challenge user ${event.user.user_id} (${username}) authentication with ${JSON.stringify(mfaTypes)}`) : null;
 
-                } else {
-                
-                    DEBUG ? console.log(`Enroll ${event.user.user_id} (${username}) with ${JSON.stringify(mfaTypes)}`) : null;
+                        await api.authentication.challengeWithAny(mfaTypes);
+
+                    } else {
                     
-                    await api.authentication.enrollWithAny(mfaTypes);
+                        DEBUG ? console.log(`Enroll ${event.user.user_id} (${username}) with ${JSON.stringify(mfaTypes)}`) : null;
+                        
+                        await api.authentication.enrollWithAny(mfaTypes);
+                    }
+                }
+
+                catch (e) {
+
+                    DEBUG ? console.log(e) : null;
+
+                    throw e;
                 }
             }
         }
-
-        DEBUG ? console.log(`Completed show passkey enrollment option for ${event.user.user_id} (${username})`) : null;
     }
 };
