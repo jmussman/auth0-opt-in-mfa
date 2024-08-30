@@ -64,6 +64,17 @@ There is no reason that the event and api objects cannot be mocked, and actions 
 As an example of how to do with for a action this project has a full suite of unit tests, written in *Vitest*, with a high percentage of code-coverage.
 Vitest performs much better than Jest at asynchromous testing, which is often the case with an action.
 
+### Run the tests in GitHub Codespaces
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=802659723) 
+
+Click the button to open the project in GitHub Codespaces, then in the VSCode Run and Debug panel execute "Run Test" or "Run Test-Coverage".
+A new terminal window will open to display the results.
+
+### Run the tests on your own computer
+
+Clone the repository to your local computer.
+You will need Node.js installed.
 At the command line in the project folder:
 
 * Execute *npm install* to add the Vitest packages.

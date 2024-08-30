@@ -501,19 +501,27 @@ describe('Action tests', async () => {
  
         expect(async () => await onExecutePostLogin(mocks.eventMock, mocks.apiMock)).rejects.toThrow(expect.stringContaining(message))
     })
+
+    it('Catches but does not logs API exception for MFA challenge', async () => {
+
+        // Redefine the API deny call to throw an exception.
+
+        const message = 'This message should be logged'
+
+        mocks.eventMock.secrets.debug = false
+        mocks.apiMock.authentication.challengeWithAny = vi.fn(() => { throw message })
+ 
+        expect(async () => await onExecutePostLogin(mocks.eventMock, mocks.apiMock)).rejects.toThrow(expect.stringContaining(message))
+    })
    
     // Gray-box tests... we know that the evaluation of the providers is done before the selection of challenge or enroll,
     // so we already tested that above.
 
     it('Invoke MFA enrollment when multifactor is undefined', async () => {
 
-        mocks.eventMock.user.username = null
-        mocks.eventMock.user.email = 'calicojack@pyrates.live'
-        mocks.eventMock.user.user_id = 'auth0|5f7c8ec7c33c6c004bbafe82'
-
         delete mocks.eventMock.user.multifactor
 
-        onExecutePostLogin(mocks.eventMock, mocks.apiMock)
+        await onExecutePostLogin(mocks.eventMock, mocks.apiMock)
 
         expect(mocks.apiMock.authentication.challengeWithAny).not.toHaveBeenCalled()
         expect(mocks.apiMock.authentication.enrollWithAny).toHaveBeenCalled()
@@ -522,11 +530,8 @@ describe('Action tests', async () => {
     it('Invoke MFA enrollment when multifactor is null', async () => {
 
         mocks.eventMock.user.multifactor = null
-        mocks.eventMock.user.username = null
-        mocks.eventMock.user.email = 'calicojack@pyrates.live'
-        mocks.eventMock.user.user_id = 'auth0|5f7c8ec7c33c6c004bbafe82'
 
-        onExecutePostLogin(mocks.eventMock, mocks.apiMock)
+        await onExecutePostLogin(mocks.eventMock, mocks.apiMock)
 
         expect(mocks.apiMock.authentication.challengeWithAny).not.toHaveBeenCalled()
         expect(mocks.apiMock.authentication.enrollWithAny).toHaveBeenCalled()
@@ -535,11 +540,19 @@ describe('Action tests', async () => {
     it('Invoke MFA enrollment when multifactor is empty', async () => {
 
         mocks.eventMock.user.multifactor = []
-        mocks.eventMock.user.username = null
-        mocks.eventMock.user.email = 'calicojack@pyrates.live'
-        mocks.eventMock.user.user_id = 'auth0|5f7c8ec7c33c6c004bbafe82'
 
         onExecutePostLogin(mocks.eventMock, mocks.apiMock)
+
+        expect(mocks.apiMock.authentication.challengeWithAny).not.toHaveBeenCalled()
+        expect(mocks.apiMock.authentication.enrollWithAny).toHaveBeenCalled()
+    })
+
+    it('Invokes MFA enrollment but does not log when debug is off', async () => {
+
+        mocks.eventMock.secrets.debug = false
+        delete mocks.eventMock.user.multifactor
+
+        await onExecutePostLogin(mocks.eventMock, mocks.apiMock)
 
         expect(mocks.apiMock.authentication.challengeWithAny).not.toHaveBeenCalled()
         expect(mocks.apiMock.authentication.enrollWithAny).toHaveBeenCalled()
@@ -556,6 +569,5 @@ describe('Action tests', async () => {
         mocks.apiMock.authentication.enrollWithAny = vi.fn(() => { throw message })
  
         expect(async () => await onExecutePostLogin(mocks.eventMock, mocks.apiMock)).rejects.toThrow(expect.stringContaining(message))
-
     })
 })
