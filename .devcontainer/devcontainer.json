@@ -1,5 +1,5 @@
 {
-    "name": "Auth0 Pyrates SPA",
+    "name": "Auth0-Opt-In-MFA",
     "forwardPorts": [
         3000
     ],
