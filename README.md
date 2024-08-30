@@ -68,7 +68,9 @@ Vitest performs much better than Jest at asynchromous testing, which is often th
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=802659723) 
 
-Click the button to open the project in GitHub Codespaces, then in the VSCode Run and Debug panel execute "Run Test" or "Run Test-Coverage".
+Click the button to open the project in GitHub Codespaces.
+Wait for codespaces to open and initialize, watch to see that the *npm install* was run.
+In the VSCode Run and Debug panel execute "Run Test" or "Run Test-Coverage".
 A new terminal window will open to display the results.
 
 ### Run the tests on your own computer
