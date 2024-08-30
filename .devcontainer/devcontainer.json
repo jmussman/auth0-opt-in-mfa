@@ -1,12 +1,3 @@
 {
-    "name": "Auth0-Opt-In-MFA",
-    "forwardPorts": [
-        3000
-    ],
-    "portsAttributes": {
-        "3000": {
-            "label": "pyrates"
-        }
-    },
-    "postAttachCommand": "gh codespace ports visibility 3000:public -c $CODESPACE_NAME"
+    "name": "Auth0-Opt-In-MFA"
 }
